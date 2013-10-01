@@ -12,7 +12,6 @@ use UUID::Tiny;
 my %sockets;
 my $redis = Redis->new(sock => '/tmp/redis.sock');
 
-# Documentation browser under "/perldoc"
 get '/' => sub {
     my $self = shift;
     $self->redirect_to('/index.html');
@@ -30,7 +29,6 @@ get '/:roomid' => sub {
     $self->render('room', roomid => $self->stash->{'roomid'});
 };
 
-# WebSocket echo service
 websocket '/:room/socket/:client' => sub {
     my $self = shift;
 
@@ -47,7 +45,7 @@ websocket '/:room/socket/:client' => sub {
     }
 
     # Increase inactivity timeout for connection a bit
-    Mojo::IOLoop->stream($self->tx->connection)->timeout(300);
+    Mojo::IOLoop->stream($self->tx->connection)->timeout(3000);
 
     # Incoming message
     $self->on(message => sub {

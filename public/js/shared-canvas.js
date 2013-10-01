@@ -18,7 +18,7 @@ $(document).ready(function () {
         e.preventDefault();
     });
 
-    socket = new WebSocket('ws://10.0.1.2:3000/' + roomid + '/socket/' + clientid);
+    socket = new WebSocket('ws://' + window.location.hostname + '/' + roomid + '/socket/' + clientid);
 
     socket.onmessage = function (event) {
         drawables.push(JSON.parse(event.data));
