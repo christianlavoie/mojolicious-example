@@ -76,6 +76,15 @@ websocket '/:room/socket/:client' => sub {
 
         $self->app->log->debug("Got $msg from $clientid");
 
+        if ($parsed->{type} eq 'undo') {
+            my @items = @{ $redis->zrange($roomid, '-1', '-1') };
+            return if not @items;
+            return if $items[0] eq "";
+
+            $redis->zrem($roomid, $items[0]);
+            return;
+        }
+
         $redis->zadd($roomid, time, $msg);
         $redis->expire($roomid, 3600 * 48);
 

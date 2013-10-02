@@ -12,6 +12,7 @@ $(document).ready(function () {
     resize();
 
     $(window).on('resize', resize);
+    $(window).on('keypress', keypress);
     $('#sharedCanvas').on('click', click);
 
     var menuitem;
@@ -155,6 +156,36 @@ function click(e) {
     return true;
 };
 
+function keypress(e) {
+    if (122 == e.keyCode) { // z
+        if (drawables.length < 1)
+            return true;
+
+        var item = drawables.pop();
+        console.log(drawables);
+        console.log('Removing item', item);
+        socket.send(JSON.stringify({ type: 'undo' }));
+        draw();
+
+    } else if (99 == e.keyCode) { // c
+        Item = Circle;
+        inprogress = new Circle();
+
+    } else if (108 == e.keyCode) {
+        Item = Line;
+        inprogress = new Line();
+
+    } else if (58 = e.keyCode) {
+        var cmd = prompt('Command to evaluate');
+        console.log(cmd);
+
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
 function resize() {
     var canvas = document.getElementById('sharedCanvas');
 
@@ -167,6 +198,8 @@ function resize() {
 function draw() {
     var canvas = document.getElementById('sharedCanvas');
     var context = canvas.getContext('2d');
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
     for (var i = 0; i < drawables.length; i++)
         drawables[i].draw(context);
