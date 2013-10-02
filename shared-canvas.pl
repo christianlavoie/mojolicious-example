@@ -21,6 +21,7 @@ get '/new-room' => sub {
     my $self = shift;
     my $roomid = UUID::Tiny::create_uuid_as_string(UUID_V4);
     $redis->zadd($roomid, 0, "");
+    $redis->expire($roomid, 3600 * 48);
     $self->redirect_to('/' . $roomid);
 };
 
@@ -52,6 +53,7 @@ websocket '/:room/socket/:client' => sub {
         my ($self, $msg) = @_;
         $self->app->log->debug("Got $msg from $clientid");
         $redis->zadd($roomid, time, $msg);
+        $redis->expire($roomid, 3600 * 48);
 
         for (keys $sockets{$roomid}) {
             next if $_ eq $clientid;
