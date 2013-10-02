@@ -72,6 +72,10 @@ $(document).ready(function () {
 
     socket.onopen = function (event) {
         console.log('Websocket opened in room ' + roomid + ' for ' + clientid);
+
+        setInterval(function() {
+            socket.send(JSON.stringify({ type: 'ping' }));
+        }, 15 * 1000);
     };
 });
 

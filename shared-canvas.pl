@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use JSON;
 use Mojolicious::Lite;
 use Redis;
 use Time::HiRes qw ( time );
@@ -20,14 +21,28 @@ get '/' => sub {
 get '/new-room' => sub {
     my $self = shift;
     my $roomid = UUID::Tiny::create_uuid_as_string(UUID_V4);
+
     $redis->zadd($roomid, 0, "");
     $redis->expire($roomid, 3600 * 48);
+
     $self->redirect_to('/' . $roomid);
 };
 
 get '/:roomid' => sub {
     my $self = shift;
-    $self->render('room', roomid => $self->stash->{'roomid'});
+    my $roomid = $self->stash->{'roomid'};
+
+    if (not UUID::Tiny::is_UUID_string($roomid)) {
+        $self->render({text => 'Invalid room identifier', status => '403'});
+        return;
+    }
+
+    if (not $redis->exists($roomid)) {
+        $self->render({text => 'Room does not exist', status => '410'});
+        return;
+    }
+
+    $self->render('room', roomid => $roomid);
 };
 
 websocket '/:room/socket/:client' => sub {
@@ -53,7 +68,14 @@ websocket '/:room/socket/:client' => sub {
     # Incoming message
     $self->on(message => sub {
         my ($self, $msg) = @_;
+        my $parsed = JSON::decode_json($msg);
+
+        return if not $parsed->{type};
+
+        return if $parsed->{type} eq 'ping';
+
         $self->app->log->debug("Got $msg from $clientid");
+
         $redis->zadd($roomid, time, $msg);
         $redis->expire($roomid, 3600 * 48);
 
