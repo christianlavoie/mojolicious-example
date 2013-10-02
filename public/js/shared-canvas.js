@@ -5,7 +5,7 @@ var inprogress = new Line();
 var clientid;
 var socket;
 
-var Item = Line;
+var createItem = Line;
 
 $(document).ready(function () {
     clientid = uuid();
@@ -17,20 +17,36 @@ $(document).ready(function () {
 
     var menuitem;
     
-    menuitem = $('<li><a>Line</a></li>');
-    $('#modeMenuUL').append(menuitem);
-    menuitem.on('click', function (e) {
-        $('#modeMenu').hide();
-        Item = Line;
-        inprogress = new Line();
-    });
-
     menuitem = $('<li><a>Circle</a></li>');
     $('#modeMenuUL').append(menuitem);
     menuitem.on('click', function (e) {
         $('#modeMenu').hide();
-        Item = Circle;
-        inprogress = new Circle();
+        createItem = Circle;
+        inprogress = createItem();
+    });
+
+    menuitem = $('<li><a>Line</a></li>');
+    $('#modeMenuUL').append(menuitem);
+    menuitem.on('click', function (e) {
+        $('#modeMenu').hide();
+        createItem = Line;
+        inprogress = createItem();
+    });
+
+    menuitem = $('<li><a>Path</a></li>');
+    $('#modeMenuUL').append(menuitem);
+    menuitem.on('click', function (e) {
+        $('#modeMenu').hide();
+        createItem = function () { return new Path(false); };
+        inprogress = createItem();
+    });
+
+    menuitem = $('<li><a>Shape</a></li>');
+    $('#modeMenuUL').append(menuitem);
+    menuitem.on('click', function (e) {
+        $('#modeMenu').hide();
+        createItem = function () { return new Path(true); };
+        inprogress = createItem();
     });
 
     $(document).on('contextmenu', function (e) {
@@ -46,11 +62,14 @@ $(document).ready(function () {
         var msg = JSON.parse(event.data);
         var obj;
 
-        if (msg.type == 'line') {
+        if (msg.type == 'circle') {
+            obj = new Circle();
+
+        } else if (msg.type == 'line') {
             obj = new Line();
 
-        } else if (msg.type == 'circle') {
-            obj = new Circle();
+        } else if (msg.type == 'path') {
+            obj = new Path(false);
 
         } else {
             console.log('Unknown object from WebSocket', msg);
@@ -138,6 +157,34 @@ function Line() {
     return this;
 }
 
+function Path(closed) {
+    this.points = [];
+    this.closed = closed;
+    this.type = 'path';
+
+    this.mouseClick = function (e) {
+        if (1 != e.which) return true;
+
+        this.points.push([ e.clientX, e.clientY ]);
+        return false;
+    }
+
+    this.draw = function (context) {
+        context.beginPath();
+        context.moveTo(this.points[0][0], this.points[0][1]);
+
+        for (var i = 1; i < this.points.length; i++)
+            context.lineTo(this.points[i][0], this.points[i][1]);
+
+        if (this.closed)
+            context.lineTo(this.points[0][0], this.points[0][1]);
+
+        context.stroke();
+    }
+
+    return this;
+}
+
 function click(e) {
     console.log(e);
 
@@ -146,7 +193,7 @@ function click(e) {
     if (inprogress.mouseClick(e)) {
         drawables.push(inprogress);
         socket.send(JSON.stringify(inprogress));
-        inprogress = new Item();
+        inprogress = createItem();
 
         draw();
     }
@@ -160,27 +207,40 @@ function keypress(e) {
             return true;
 
         var item = drawables.pop();
-        console.log(drawables);
-        console.log('Removing item', item);
         socket.send(JSON.stringify({ type: 'undo' }));
         draw();
 
-    } else if (99 == e.keyCode) { // c
-        Item = Circle;
-        inprogress = new Circle();
+    } else if (32 == e.keyCode) { // spacebar
+        if ('path' != inprogress.type)
+            return false;
 
-    } else if (108 == e.keyCode) {
-        Item = Line;
-        inprogress = new Line();
+        drawables.push(inprogress);
+        socket.send(JSON.stringify(inprogress));
+        draw();
 
-    } else if (58 = e.keyCode) {
+    } else if (99 === e.keyCode) { // c
+        createItem = function() { return new Circle() };
+
+    } else if (108 === e.keyCode) { // l
+        createItem = function() { return new Line(); };
+
+    } else if (112 === e.keyCode) { // p
+        createItem = function() { return new Path(false); };
+
+    } else if (115 === e.keyCode) { // s
+        createItem = function() { return new Path(true); };
+
+    } else if (58 === e.keyCode) { // :
         var cmd = prompt('Command to evaluate');
         console.log(cmd);
+        return true;
 
     } else {
+        console.log(e.keyCode);
         return false;
     }
 
+    inprogress = createItem();
     return true;
 }
 
