@@ -94,8 +94,6 @@ function Circle() {
         }
 
         this.end = [ e.clientX, e.clientY ];
-
-        drawables.push(this);
         return true;
     }
 
