@@ -121,6 +121,22 @@ Welcome to the Mojolicious real-time web framework!
     <link rel="stylesheet" href="/css/pure/0.3.0/base-min.css">
     <link rel="stylesheet" href="/css/pure/0.3.0/pure-min.css">
 
+    <style>
+    body {
+        overflow: hidden;
+    }
+
+    #modeMenu {
+        width: 10%;
+
+        display: none;
+        position: absolute;
+
+        top: 0;
+        left: 0;
+    }
+    </style>
+
     <script type="application/javascript">
         var roomid = '<%= $roomid %>';
     </script>
@@ -129,12 +145,5 @@ Welcome to the Mojolicious real-time web framework!
     <script src="/js/zepto.js"></script>
     <script src="/js/shared-canvas.js"></script>
   </head>
-  <body>
-    <canvas id="sharedCanvas" height=480 width=640></canvas>
-
-    <div id="modeMenu" style="width: 10%; display: none; position: absolute;" class="pure-menu pure-menu-open">
-      <ul id="modeMenuUL">
-      </ul>
-    </div>
-  </body>
+  <body><canvas id="sharedCanvas" height=480 width=640></canvas><div id="modeMenu" class="pure-menu pure-menu-open"><ul id="modeMenuUL"></ul></div></body>
 </html>

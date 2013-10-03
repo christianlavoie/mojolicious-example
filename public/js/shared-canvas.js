@@ -1,11 +1,10 @@
 var drawables = [];
 
-var inprogress = new Line();
-
 var clientid;
 var socket;
 
-var createItem = Line;
+var createItem = function () { return new Line(); }
+var inprogress = createItem();
 
 $(document).ready(function () {
     clientid = uuid();
@@ -114,7 +113,7 @@ function Circle() {
 
         this.end = [ e.clientX, e.clientY ];
         return true;
-    }
+    };
 
     this.draw = function (context) {
         var dx = this.start[0] - this.end[0];
@@ -125,7 +124,7 @@ function Circle() {
         context.beginPath();
         context.arc(this.start[0], this.start[1], radius, 0, 2 * Math.PI, false);
         context.stroke();
-    }
+    };
 
     return this;
 }
@@ -145,14 +144,14 @@ function Line() {
 
         this.end = [ e.clientX, e.clientY ];
         return true;
-    }
+    };
 
     this.draw = function (context) {
         context.beginPath();
         context.moveTo(this.start[0], this.start[1]);
         context.lineTo(this.end[0], this.end[1]);
         context.stroke();
-    }
+    };
 
     return this;
 }
@@ -167,7 +166,7 @@ function Path(closed) {
 
         this.points.push([ e.clientX, e.clientY ]);
         return false;
-    }
+    };
 
     this.draw = function (context) {
         context.beginPath();
@@ -180,14 +179,12 @@ function Path(closed) {
             context.lineTo(this.points[0][0], this.points[0][1]);
 
         context.stroke();
-    }
+    };
 
     return this;
 }
 
 function click(e) {
-    console.log(e);
-
     if (1 != e.which) return true;
 
     if (inprogress.mouseClick(e)) {
@@ -202,15 +199,16 @@ function click(e) {
 };
 
 function keypress(e) {
-    if (122 == e.keyCode) { // z
+    if (122 == e.charCode) { // z
         if (drawables.length < 1)
-            return true;
+            return false;
 
-        var item = drawables.pop();
+        drawables.pop();
+
         socket.send(JSON.stringify({ type: 'undo' }));
         draw();
 
-    } else if (32 == e.keyCode) { // spacebar
+    } else if (32 == e.charCode) { // spacebar
         if ('path' != inprogress.type)
             return false;
 
@@ -218,30 +216,29 @@ function keypress(e) {
         socket.send(JSON.stringify(inprogress));
         draw();
 
-    } else if (99 === e.keyCode) { // c
+    } else if (99 === e.charCode) { // c
         createItem = function() { return new Circle() };
 
-    } else if (108 === e.keyCode) { // l
+    } else if (108 === e.charCode) { // l
         createItem = function() { return new Line(); };
 
-    } else if (112 === e.keyCode) { // p
+    } else if (112 === e.charCode) { // p
         createItem = function() { return new Path(false); };
 
-    } else if (115 === e.keyCode) { // s
+    } else if (115 === e.charCode) { // s
         createItem = function() { return new Path(true); };
 
-    } else if (58 === e.keyCode) { // :
+    } else if (58 === e.charCode) { // :
         var cmd = prompt('Command to evaluate');
         console.log(cmd);
         return true;
 
     } else {
-        console.log(e.keyCode);
-        return false;
+        return true;
     }
 
     inprogress = createItem();
-    return true;
+    return false;
 }
 
 function resize() {
