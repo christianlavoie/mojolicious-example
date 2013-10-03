@@ -54,7 +54,7 @@ websocket '/:room/socket/:client' => sub {
     $self->app->log->debug("WebSocket opened in room $roomid for $clientid");
     $sockets{$roomid}{$clientid} = $self;
 
-    my @commands = $redis->zrevrange($roomid, 0, '-1');
+    my @commands = $redis->zrange($roomid, 0, '-1');
     for (@commands) {
         next if $_ eq "";
 
