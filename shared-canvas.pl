@@ -135,6 +135,22 @@ Welcome to the Mojolicious real-time web framework!
         top: 0;
         left: 0;
     }
+
+    #colorPalette {
+        width: 64px;
+        height: 64px;
+
+        display: none;
+        position: absolute;
+
+        top: 0;
+        left: 0;
+    }
+
+    #colorPalette tr td {
+        width: 16px;
+        height: 16px;
+    }
     </style>
 
     <script type="application/javascript">
@@ -145,5 +161,29 @@ Welcome to the Mojolicious real-time web framework!
     <script src="/js/zepto.js"></script>
     <script src="/js/shared-canvas.js"></script>
   </head>
-  <body><canvas id="sharedCanvas" height=480 width=640></canvas><div id="modeMenu" class="pure-menu pure-menu-open"><ul id="modeMenuUL"></ul></div></body>
+  <body>
+  <table id="colorPalette">
+
+    <canvas id="sharedCanvas" height=480 width=640></canvas>
+    
+    <div id="modeMenu" class="pure-menu pure-menu-open"><ul id="modeMenuUL"></ul></div>
+
+    <tr><td style="background-color: rgb(100%, 100%, 100%);"></td>
+        <td style="background-color: rgb( 75%,  75%,  75%);"></td>
+        <td style="background-color: rgb( 50%,  50%,  50%);"></td>
+        <td style="background-color: rgb(  0%,   0%,   0%);"></td></tr>
+    <tr><td style="background-color: rgb(100%,   0%,   0%);"></td>
+        <td style="background-color: rgb( 50%,   0%,   0%);"></td>
+        <td style="background-color: rgb(100%, 100%,   0%);"></td>
+        <td style="background-color: rgb( 50%,  50%,   0%);"></td></tr>
+    <tr><td style="background-color: rgb(  0%, 100%,   0%);"></td>
+        <td style="background-color: rgb(  0%,  50%,   0%);"></td>
+        <td style="background-color: rgb(  0%, 100%, 100%);"></td>
+        <td style="background-color: rgb(  0%,  50%,  50%);"></td></tr>
+    <tr><td style="background-color: rgb(  0%,   0%, 100%);"></td>
+        <td style="background-color: rgb(  0%,   0%,  50%);"></td>
+        <td style="background-color: rgb(100%,   0%, 100%);"></td>
+        <td style="background-color: rgb( 50%,   0%,  50%);"></td></tr></table>
+
+</body>
 </html>

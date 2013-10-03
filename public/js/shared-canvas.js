@@ -2,6 +2,8 @@ var drawables = [];
 
 var clientid;
 var socket;
+var mousePosition;
+var currentColor = "rgb(0, 0, 0)";
 
 var createItem = function () { return new Line(); }
 var inprogress = createItem();
@@ -12,6 +14,8 @@ $(document).ready(function () {
 
     $(window).on('resize', resize);
     $(window).on('keypress', keypress);
+    $(window).on('mousemove', function (e) { mousePosition = [e.clientX, e.clientY]; });
+
     $('#sharedCanvas').on('click', click);
 
     var menuitem;
@@ -48,11 +52,16 @@ $(document).ready(function () {
         inprogress = createItem();
     });
 
+    $('#colorPalette tr td').on('click', function (e) {
+        $('#colorPalette').hide();
+        currentColor = $(e.target).css('background-color');
+    });
+
     $(document).on('contextmenu', function (e) {
         e.preventDefault();
 
         $('#modeMenu').show();
-        $('#modeMenu').offset({ left: e.clientX, top: e.clientY});
+        $('#modeMenu').css({ left: e.clientX, top: e.clientY });
     });
 
     socket = new WebSocket('ws://' + window.location.hostname + '/' + roomid + '/socket/' + clientid);
@@ -102,6 +111,7 @@ function Circle() {
     this.start = [];
     this.end = [];
     this.type = 'circle';
+    this.color = currentColor;
 
     this.mouseClick = function (e) {
         if (1 != e.which) return true;
@@ -112,6 +122,7 @@ function Circle() {
         }
 
         this.end = [ e.clientX, e.clientY ];
+        this.color = currentColor;
         return true;
     };
 
@@ -123,6 +134,7 @@ function Circle() {
 
         context.beginPath();
         context.arc(this.start[0], this.start[1], radius, 0, 2 * Math.PI, false);
+        context.strokeStyle = this.color;
         context.stroke();
     };
 
@@ -133,6 +145,7 @@ function Line() {
     this.start = [];
     this.end = [];
     this.type = 'line';
+    this.color = currentColor;
 
     this.mouseClick = function (e) {
         if (1 != e.which) return true;
@@ -143,6 +156,7 @@ function Line() {
         }
 
         this.end = [ e.clientX, e.clientY ];
+        this.color = currentColor;
         return true;
     };
 
@@ -150,6 +164,7 @@ function Line() {
         context.beginPath();
         context.moveTo(this.start[0], this.start[1]);
         context.lineTo(this.end[0], this.end[1]);
+        context.strokeStyle = this.color;
         context.stroke();
     };
 
@@ -160,11 +175,13 @@ function Path(closed) {
     this.points = [];
     this.closed = closed;
     this.type = 'path';
+    this.color = currentColor;
 
     this.mouseClick = function (e) {
         if (1 != e.which) return true;
 
         this.points.push([ e.clientX, e.clientY ]);
+        this.color = currentColor;
         return false;
     };
 
@@ -178,6 +195,7 @@ function Path(closed) {
         if (this.closed)
             context.lineTo(this.points[0][0], this.points[0][1]);
 
+        context.strokeStyle = this.color;
         context.stroke();
     };
 
@@ -199,7 +217,7 @@ function click(e) {
 };
 
 function keypress(e) {
-    if (122 == e.charCode) { // z
+    if ('z'.charCodeAt(0) == e.which) {
         if (drawables.length < 1)
             return false;
 
@@ -208,7 +226,12 @@ function keypress(e) {
         socket.send(JSON.stringify({ type: 'undo' }));
         draw();
 
-    } else if (32 == e.charCode) { // spacebar
+    } else if ('x'.charCodeAt(0) === e.which) {
+        var palette = $('#colorPalette');
+        palette.show();
+        palette.css({ left: mousePosition[0], top: mousePosition[1], });
+
+    } else if (' '.charCodeAt(0) == e.which) {
         if ('path' != inprogress.type)
             return false;
 
@@ -216,22 +239,17 @@ function keypress(e) {
         socket.send(JSON.stringify(inprogress));
         draw();
 
-    } else if (99 === e.charCode) { // c
+    } else if ('c'.charCodeAt(0) === e.which) {
         createItem = function() { return new Circle() };
 
-    } else if (108 === e.charCode) { // l
+    } else if ('l'.charCodeAt(0) === e.which) {
         createItem = function() { return new Line(); };
 
-    } else if (112 === e.charCode) { // p
+    } else if ('p'.charCodeAt(0) === e.which) {
         createItem = function() { return new Path(false); };
 
-    } else if (115 === e.charCode) { // s
+    } else if ('s'.charCodeAt(0) === e.which) {
         createItem = function() { return new Path(true); };
-
-    } else if (58 === e.charCode) { // :
-        var cmd = prompt('Command to evaluate');
-        console.log(cmd);
-        return true;
 
     } else {
         return true;
