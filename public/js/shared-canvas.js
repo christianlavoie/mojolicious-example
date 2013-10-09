@@ -9,6 +9,8 @@ var createItem = function () { return new Line(); }
 var inprogress = createItem();
 
 $(document).ready(function () {
+    window.draw = SVG('sharedCanvas');
+
     clientid = uuid();
     resize();
 
@@ -85,9 +87,9 @@ $(document).ready(function () {
         }
 
         $.extend(obj, msg);
+        obj.finalize();
 
         drawables.push(obj);
-        draw();
     };
 
     socket.onerror = function (event) {
@@ -108,35 +110,52 @@ $(document).ready(function () {
 });
 
 function Circle() {
-    this.start = [];
-    this.end = [];
-    this.type = 'circle';
+    this.center = [];
+    this.radius = 0.0;
+
     this.color = currentColor;
+    this.type = 'circle';
+
+    this.encode = function() {
+        return JSON.stringify({
+            'center': this.center,
+            'radius': this.radius,
+            'color': this.color,
+            'type': this.type,
+        });
+    };
 
     this.mouseClick = function (e) {
         if (1 != e.which) return true;
 
-        if (this.start.length <= 0) {
-            this.start = [ e.clientX, e.clientY ];
+        if (this.center.length <= 0) {
+            this.center = [ e.clientX, e.clientY ];
             return false;
         }
 
-        this.end = [ e.clientX, e.clientY ];
+        var dx = this.center[0] - e.clientX;
+        var dy = this.center[1] - e.clientY;
+        this.radius = Math.sqrt(dx * dx + dy * dy);
+
         this.color = currentColor;
+        this.finalize();
+
         return true;
     };
 
-    this.draw = function (context) {
-        var dx = this.start[0] - this.end[0];
-        var dy = this.start[1] - this.end[1];
+    this.remove = function() {
+        this.svgCircle.remove();
+    }
 
-        var radius = Math.sqrt(dx * dx + dy * dy);
-
-        context.beginPath();
-        context.arc(this.start[0], this.start[1], radius, 0, 2 * Math.PI, false);
-        context.strokeStyle = this.color;
-        context.stroke();
-    };
+    this.finalize = function() {
+        this.svgCircle = window.draw.circle(this.radius * 2.0);
+        this.svgCircle.move(this.center[0] - this.radius, this.center[1] - this.radius);
+        this.svgCircle.fill('none');
+        this.svgCircle.stroke({
+            color: this.color,
+            width: 1,
+        });
+    }
 
     return this;
 }
@@ -144,8 +163,18 @@ function Circle() {
 function Line() {
     this.start = [];
     this.end = [];
-    this.type = 'line';
+
     this.color = currentColor;
+    this.type = 'line';
+
+    this.encode = function() {
+        return JSON.stringify({
+            'start': this.start,
+            'end': this.end,
+            'color': this.color,
+            'type': this.type,
+        });
+    };
 
     this.mouseClick = function (e) {
         if (1 != e.which) return true;
@@ -157,25 +186,40 @@ function Line() {
 
         this.end = [ e.clientX, e.clientY ];
         this.color = currentColor;
+        this.finalize();
+
         return true;
     };
 
-    this.draw = function (context) {
-        context.beginPath();
-        context.moveTo(this.start[0], this.start[1]);
-        context.lineTo(this.end[0], this.end[1]);
-        context.strokeStyle = this.color;
-        context.stroke();
-    };
+    this.remove = function() {
+        this.svgLine.remove();
+    }
+
+    this.finalize = function() {
+        this.svgLine = window.draw.line(this.start[0], this.start[1], this.end[0], this.end[1]);
+        this.svgLine.stroke({
+            color: this.color,
+            width: 1,
+        });
+    }
 
     return this;
 }
 
 function Path(closed) {
-    this.points = [];
     this.closed = closed;
-    this.type = 'path';
     this.color = currentColor;
+    this.points = [];
+    this.type = 'path';
+
+    this.encode = function () {
+        return JSON.stringify({
+            'closed': this.closed,
+            'color': this.color,
+            'points': this.points,
+            'type': this.type,
+        });
+    };
 
     this.mouseClick = function (e) {
         if (1 != e.which) return true;
@@ -185,19 +229,20 @@ function Path(closed) {
         return false;
     };
 
-    this.draw = function (context) {
-        context.beginPath();
-        context.moveTo(this.points[0][0], this.points[0][1]);
+    this.remove = function() {
+        this.svgPolyline.remove();
+    }
 
-        for (var i = 1; i < this.points.length; i++)
-            context.lineTo(this.points[i][0], this.points[i][1]);
+    this.finalize = function() {
+        if (closed) this.points.push(this.points[0]);
 
-        if (this.closed)
-            context.lineTo(this.points[0][0], this.points[0][1]);
-
-        context.strokeStyle = this.color;
-        context.stroke();
-    };
+        this.svgPolyline = window.draw.polyline(this.points);
+        this.svgPolyline.fill('none');
+        this.svgPolyline.stroke({
+            color: this.color,
+            width: 1,
+        });
+    }
 
     return this;
 }
@@ -207,10 +252,9 @@ function click(e) {
 
     if (inprogress.mouseClick(e)) {
         drawables.push(inprogress);
-        socket.send(JSON.stringify(inprogress));
+        socket.send(inprogress.encode());
+        console.log(inprogress.encode());
         inprogress = createItem();
-
-        draw();
     }
 
     return true;
@@ -221,10 +265,10 @@ function keypress(e) {
         if (drawables.length < 1)
             return false;
 
-        drawables.pop();
+        var item = drawables.pop();
+        item.remove();
 
         socket.send(JSON.stringify({ type: 'undo' }));
-        draw();
 
     } else if ('x'.charCodeAt(0) === e.which) {
         var palette = $('#colorPalette');
@@ -235,9 +279,9 @@ function keypress(e) {
         if ('path' != inprogress.type)
             return false;
 
+        inprogress.finalize();
         drawables.push(inprogress);
-        socket.send(JSON.stringify(inprogress));
-        draw();
+        socket.send(inprogress.encode());
 
     } else if ('c'.charCodeAt(0) === e.which) {
         createItem = function() { return new Circle() };
@@ -268,18 +312,6 @@ function resize() {
 
     canvas.height = window.innerHeight;
     canvas.width = window.innerWidth;
-
-    draw();
-}
-
-function draw() {
-    var canvas = document.getElementById('sharedCanvas');
-    var context = canvas.getContext('2d');
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (var i = 0; i < drawables.length; i++)
-        drawables[i].draw(context);
 }
 
 function uuid() {
