@@ -24,7 +24,7 @@ $(document).ready(function () {
     $('#modeMenuUL').append(menuitem);
     menuitem.on('click', function (e) {
         $('#modeMenu').hide();
-        createItem = Circle;
+        createItem = function () { return new Circle(); }
         inprogress = createItem();
     });
 
@@ -32,7 +32,7 @@ $(document).ready(function () {
     $('#modeMenuUL').append(menuitem);
     menuitem.on('click', function (e) {
         $('#modeMenu').hide();
-        createItem = Line;
+        createItem = function () { return new Line(); }
         inprogress = createItem();
     });
 
@@ -241,6 +241,10 @@ function keypress(e) {
 
     } else if ('c'.charCodeAt(0) === e.which) {
         createItem = function() { return new Circle() };
+
+    } else if ('h'.charCodeAt(0) === e.which) {
+        var newwindow = window.open('/help.html', 'help', 'height=480, width=640');
+         newwindow.focus();
 
     } else if ('l'.charCodeAt(0) === e.which) {
         createItem = function() { return new Line(); };
